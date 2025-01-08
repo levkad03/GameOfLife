@@ -1,64 +1,58 @@
-import random
-
+import numpy as np
 import pygame as p
 from pygame.locals import *
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 # create window
-root = p.display.set_mode((500, 500))
+root = p.display.set_mode((1000, 500))
 
-cells = [
-    [random.choice([0, 1]) for j in range(root.get_width() // 20)]
-    for i in range(root.get_height() // 20)
-]
+rows = root.get_height() // 20
+cols = root.get_width() // 20
 
+cells = np.random.choice([0, 1], size=(rows, cols))
 
-# Function for counting the neighbours
-def near(
-    pos: list,
-    system=[[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]],
-):
-    count = 0
-    for i in system:
-        if cells[(pos[0] + i[0]) % len(cells)][(pos[1] + i[1]) % len(cells[0])]:
-            count += 1
-    return count
+def count_neighbours(cells):
+    return (
+        np.roll(cells, 1, axis=0)  # up
+        + np.roll(cells, -1, axis=0)  # down
+        + np.roll(cells, 1, axis=1)  # left
+        + np.roll(cells, -1, axis=1)  # right
+        + np.roll(np.roll(cells, 1, axis=0), 1, axis=1)  # up-left
+        + np.roll(np.roll(cells, 1, axis=0), -1, axis=1)  # up-right
+        + np.roll(np.roll(cells, -1, axis=0), 1, axis=1)  # down-left
+        + np.roll(np.roll(cells, -1, axis=0), -1, axis=1)  # down-right
+    )
 
 
 while 1:
     root.fill(WHITE)
 
     # Grid
-    for i in range(0, root.get_height() // 20):
-        p.draw.line(root, BLACK, (0, i * 20), (root.get_width(), i * 20))
-    for j in range(0, root.get_width() // 20):
-        p.draw.line(root, BLACK, (j * 20, 0), (j * 20, root.get_height()))
+    for i in range(0, root.get_height(), 20):
+        p.draw.line(root, BLACK, (0, i), (root.get_width(), i))
+    for j in range(0, root.get_width(), 20):
+        p.draw.line(root, BLACK, (j, 0), (j, root.get_height()))
+
     for i in p.event.get():
         if i.type == QUIT:
             quit()
 
-    # loop through all the cells
-    for i in range(0, len(cells)):
-        for j in range(0, len(cells[i])):
-            print(cells[i][j], i, j)
-            p.draw.rect(root, (255 * cells[i][j] % 256, 0, 0), [i * 20, j * 20, 20, 20])
+    # draw cells
+    for i in range(rows):
+        for j in range(cols):
+            if cells[i, j]:
+                p.draw.rect(root, BLACK, [j * 20, i * 20, 20, 20])
+
+    neighbours = count_neighbours(cells)
+
+    # game rules
+    new_cells = np.zeros_like(cells)
+    new_cells[(cells == 1) & ((neighbours == 2) | (neighbours == 3))] = 1
+    new_cells[(cells == 0) & (neighbours == 3)] = 1
+
+    cells = new_cells
     # Update screen
     p.display.update()
-    cells2 = [[0 for j in range(len(cells[0]))] for i in range(len(cells))]
-    for i in range(len(cells)):
-        for j in range(len(cells[0])):
-            # if cell is alive
-            if cells[i][j]:
-                # if num of neighbours is not 2 or 3
-                if near([i, j]) not in (2, 3):
-                    cells2[i][j] = 0
-                    continue
-                cells2[i][j] = 1
-                continue
-            # if cell is dead and has 3 neighbours
-            if near([i, j]) == 3:
-                cells2[i][j] = 1
-                continue
-            cells2[i][j] = 0
-    cells = cells2
+
+    p.time.delay(100)
