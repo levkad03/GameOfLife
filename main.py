@@ -7,10 +7,19 @@ WHITE = (255, 255, 255)
 # create window
 root = p.display.set_mode((1000, 500))
 
+p.display.set_caption("Game of Life")
+
 rows = root.get_height() // 20
 cols = root.get_width() // 20
 
 cells = np.random.choice([0, 1], size=(rows, cols))
+
+age = np.zeros_like(cells)
+
+
+def get_color(age):
+    return (255 - min(255, age * 20), 0, min(255, age * 20))
+
 
 def count_neighbours(cells):
     return (
@@ -42,7 +51,7 @@ while 1:
     for i in range(rows):
         for j in range(cols):
             if cells[i, j]:
-                p.draw.rect(root, BLACK, [j * 20, i * 20, 20, 20])
+                p.draw.rect(root, get_color(age[i, j]), [j * 20, i * 20, 20, 20])
 
     neighbours = count_neighbours(cells)
 
@@ -50,6 +59,8 @@ while 1:
     new_cells = np.zeros_like(cells)
     new_cells[(cells == 1) & ((neighbours == 2) | (neighbours == 3))] = 1
     new_cells[(cells == 0) & (neighbours == 3)] = 1
+
+    age = (age + 1) * new_cells
 
     cells = new_cells
     # Update screen
