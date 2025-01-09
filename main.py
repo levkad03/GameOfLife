@@ -18,7 +18,7 @@ age = np.zeros_like(cells)
 
 
 def get_color(age):
-    return (255 - min(255, age * 20), 0, min(255, age * 20))
+    return (min(255, age * 20), 0, min(255, age * 20))
 
 
 def count_neighbours(cells):
